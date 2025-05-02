@@ -1,0 +1,2212 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Curaduría - Gestión Urbana SaaS (v3)</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8f9fa;
+        }
+        .sidebar {
+            height: 100vh;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 250px;
+            background-color: #343a40;
+            padding-top: 20px;
+            transition: all 0.3s;
+            overflow-y: auto;
+        }
+        .sidebar .nav-link {
+            color: #adb5bd;
+            padding: 10px 15px;
+            transition: all 0.3s;
+            border-radius: 0.25rem;
+            margin: 2px 10px;
+            white-space: nowrap;
+        }
+        .sidebar .nav-link:hover, .sidebar .nav-link.active {
+            color: #ffffff;
+            background-color: #495057;
+        }
+        .sidebar .nav-link .fa-fw {
+            margin-right: 10px;
+        }
+        .content {
+            margin-left: 250px;
+            padding: 30px;
+            transition: all 0.3s;
+        }
+        .card {
+            border-radius: 0.5rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,.1);
+            margin-bottom: 20px;
+        }
+        .card-header {
+             background-color: #e9ecef;
+             border-bottom: 1px solid #dee2e6;
+             font-weight: 600;
+             border-top-left-radius: 0.5rem;
+             border-top-right-radius: 0.5rem;
+        }
+        .btn {
+            border-radius: 0.375rem;
+        }
+        .form-control, .form-select {
+            border-radius: 0.375rem;
+        }
+        /* Map simulation styles */
+        .map-container {
+            position: relative;
+            max-width: 100%;
+            overflow: hidden;
+            border-radius: 0.5rem;
+        }
+        .map-container img {
+            display: block;
+            width: 100%;
+            height: auto;
+        }
+        .map-overlay {
+            position: absolute;
+            background-color: rgba(0, 123, 255, 0.5);
+            border: 1px solid #0056b3;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 10px;
+        }
+        .map-overlay:hover {
+            background-color: rgba(0, 86, 179, 0.7);
+        }
+        /* Tooltip for map */
+        .tooltip-inner {
+            background-color: #343a40;
+            color: white;
+            border-radius: 0.25rem;
+        }
+        .tooltip.bs-tooltip-auto[data-popper-placement^=top] .tooltip-arrow::before,
+        .tooltip.bs-tooltip-top .tooltip-arrow::before {
+          border-top-color: #343a40;
+        }
+        /* Loader simulation */
+        .loader {
+            border: 4px solid #f3f3f3;
+            border-radius: 50%;
+            border-top: 4px solid #3498db;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 10px auto;
+            display: none;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        /* History list styling */
+        .history-list {
+            list-style: none;
+            padding-left: 1.5rem;
+            position: relative;
+        }
+        .history-list::before {
+            content: '';
+            position: absolute;
+            left: 0.5rem;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background-color: #dee2e6;
+        }
+        .history-item {
+            position: relative;
+            margin-bottom: 1rem;
+        }
+        .history-item::before {
+            content: '';
+            position: absolute;
+            left: -1rem;
+            top: 0.3rem;
+            width: 0.75rem;
+            height: 0.75rem;
+            border-radius: 50%;
+            background-color: #0d6efd; /* Bootstrap primary color */
+            border: 2px solid #fff;
+        }
+        /* Responsive adjustments */
+         @media (max-width: 768px) {
+            .sidebar {
+                width: 100%;
+                height: auto;
+                position: relative;
+                overflow-y: visible;
+            }
+            .content {
+                margin-left: 0;
+            }
+            .sidebar .nav {
+                flex-direction: row;
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+             .sidebar .nav-link {
+                margin: 5px;
+            }
+            .page-section h2 {
+                font-size: 1.5rem;
+            }
+            #radicadoDetailModal .modal-dialog {
+                 max-width: 95%; /* Wider modal on small screens */
+             }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="sidebar">
+        <h4 class="text-white text-center mb-4">Curaduría XYZ</h4>
+        <ul class="nav flex-column">
+            <li class="nav-item">
+                <a class="nav-link active" href="#" data-section="dashboard"><i class="fas fa-tachometer-alt fa-fw"></i> Dashboard</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="#" data-section="radicados"><i class="fas fa-file-alt fa-fw"></i> Gestión Radicados</a>
+            </li>
+             <li class="nav-item">
+                <a class="nav-link" href="#" data-section="pagos"><i class="fas fa-dollar-sign fa-fw"></i> Control de Pagos</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="#" data-section="usuarios"><i class="fas fa-users-cog fa-fw"></i> Usuarios y Roles</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="#" data-section="informes"><i class="fas fa-chart-line fa-fw"></i> Informes Control</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="#" data-section="website"><i class="fas fa-palette fa-fw"></i> Gestión Sitio Web</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="#" data-section="documentos"><i class="fas fa-folder-open fa-fw"></i> Gestión Documental</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="#" data-section="analisis"><i class="fas fa-chart-pie fa-fw"></i> Análisis y Reportes</a>
+            </li>
+             <li class="nav-item">
+                <a class="nav-link" href="#" data-section="mapas"><i class="fas fa-map-marked-alt fa-fw"></i> Mapas POT</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="#" data-section="pqrs"><i class="fas fa-headset fa-fw"></i> Gestión PQRS</a>
+            </li>
+             <li class="nav-item">
+                <a class="nav-link" href="#" data-section="soporte"><i class="fas fa-life-ring fa-fw"></i> Soporte Técnico</a>
+            </li>
+            <li class="nav-item mt-3">
+                 <div class="px-3">
+                    <label for="roleSelector" class="form-label text-white small">Simular Rol:</label>
+                    <select id="roleSelector" class="form-select form-select-sm">
+                        <option value="curador">Curador</option>
+                        <option value="personal">Personal</option>
+                    </select>
+                 </div>
+            </li>
+        </ul>
+    </div>
+
+    <div class="content">
+
+        <div id="dashboard-section" class="page-section">
+            <h2>Dashboard Principal</h2>
+            <p>Resumen general de la actividad de la curaduría.</p>
+            <div class="row">
+                <div class="col-md-3">
+                    <div class="card text-center">
+                        <div class="card-body">
+                            <h5 class="card-title"><i class="fas fa-file-alt text-primary"></i> Radicados Activos</h5>
+                            <p class="card-text fs-3" id="active-radicados-count">0</p>
+                        </div>
+                    </div>
+                </div>
+                 <div class="col-md-3">
+                    <div class="card text-center">
+                        <div class="card-body">
+                            <h5 class="card-title"><i class="fas fa-dollar-sign text-warning"></i> Pagos Pendientes</h5>
+                            <p class="card-text fs-3" id="pending-payments-count">0</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                     <div class="card text-center">
+                        <div class="card-body">
+                            <h5 class="card-title"><i class="fas fa-headset text-success"></i> PQRS Pendientes</h5>
+                            <p class="card-text fs-3" id="pending-pqrs-count">0</p>
+                        </div>
+                    </div>
+                </div>
+                 <div class="col-md-3">
+                     <div class="card text-center">
+                        <div class="card-body">
+                            <h5 class="card-title"><i class="fas fa-users text-info"></i> Usuarios Activos</h5>
+                            <p class="card-text fs-3" id="active-users-count">0</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+             <div class="card mt-4">
+                <div class="card-header">Actividad Reciente</div>
+                <div class="card-body" style="max-height: 300px; overflow-y: auto;">
+                    <ul class="list-group list-group-flush" id="recent-activity">
+                        <li class="list-group-item">Cargando actividad...</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div id="radicados-section" class="page-section d-none">
+            <h2>Gestión de Radicados</h2>
+            <div class="card">
+                <div class="card-header">Lista de Radicados</div>
+                <div class="card-body">
+                     <div class="table-responsive">
+                        <table class="table table-hover table-sm align-middle">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Título</th>
+                                    <th>Solicitante</th>
+                                    <th>Estado</th>
+                                    <th>Asignado a</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="radicados-list">
+                                </tbody>
+                        </table>
+                    </div>
+                     <button class="btn btn-primary mt-3" data-bs-toggle="modal" data-bs-target="#addRadicadoModal"><i class="fas fa-plus me-1"></i> Nuevo Radicado (Simulado)</button>
+                </div>
+            </div>
+
+            <div class="modal fade" id="radicadoDetailModal" tabindex="-1" aria-labelledby="radicadoDetailModalLabel" aria-hidden="true">
+              <div class="modal-dialog modal-xl"> <div class="modal-content">
+                  <div class="modal-header">
+                    <h5 class="modal-title" id="radicadoDetailModalLabel">Detalle Radicado</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                  </div>
+                  <div class="modal-body">
+                    <form id="editRadicadoForm">
+                        <input type="hidden" id="edit-radicado-id">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h5>Información General</h5>
+                                <dl class="row mb-3">
+                                    <dt class="col-sm-4">ID Radicado:</dt>
+                                    <dd class="col-sm-8" id="detail-radicado-id-display"></dd>
+
+                                    <dt class="col-sm-4">Título:</dt>
+                                    <dd class="col-sm-8" id="detail-radicado-title"></dd>
+
+                                    <dt class="col-sm-4">Solicitante:</dt>
+                                    <dd class="col-sm-8" id="detail-radicado-solicitante"></dd>
+
+                                    <dt class="col-sm-4">Dirección:</dt>
+                                    <dd class="col-sm-8" id="detail-radicado-direccion"></dd>
+
+                                    <dt class="col-sm-4">Fecha Radicación:</dt>
+                                    <dd class="col-sm-8" id="detail-radicado-fecha"></dd>
+                                </dl>
+
+                                <hr>
+
+                                <h5>Actualizar Estado y Asignación</h5>
+                                <div class="mb-3">
+                                    <label for="edit-radicado-status" class="form-label">Cambiar Estado</label>
+                                    <select class="form-select form-select-sm" id="edit-radicado-status">
+                                        <option value="Recibido">Recibido</option>
+                                        <option value="En Revisión">En Revisión</option>
+                                        <option value="Requiere Ajustes">Requiere Ajustes</option>
+                                        <option value="Aprobado">Aprobado</option>
+                                        <option value="Rechazado">Rechazado</option>
+                                        <option value="Archivado">Archivado</option>
+                                    </select>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="edit-radicado-assigned" class="form-label">Reasignar a</label>
+                                    <select class="form-select form-select-sm" id="edit-radicado-assigned">
+                                        <option value="">Sin asignar</option>
+                                        </select>
+                                </div>
+                                 <div class="loader" id="radicado-loader"></div>
+                                <button type="submit" class="btn btn-success btn-sm">Guardar Cambios</button>
+                            </div>
+
+                            <div class="col-md-6">
+                                <div class="mb-4">
+                                    <h5>Historial de Estados</h5>
+                                    <div style="max-height: 200px; overflow-y: auto; border: 1px solid #eee; padding: 10px; border-radius: 0.375rem;">
+                                        <ul class="history-list" id="detail-radicado-history">
+                                            <li class="history-item text-muted small">Cargando historial...</li>
+                                        </ul>
+                                    </div>
+                                </div>
+
+                                <div id="internal-notes-section" class="role-curador"> <hr>
+                                    <h5>Notas Internas (Solo Curador)</h5>
+                                    <div style="max-height: 150px; overflow-y: auto; border: 1px solid #eee; padding: 10px; border-radius: 0.375rem; background-color: #f8f9fa; margin-bottom: 10px;">
+                                        <ul class="list-unstyled" id="detail-radicado-internal-notes">
+                                             <li class="text-muted small">Cargando notas...</li>
+                                        </ul>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="new-internal-note" class="form-label small">Añadir Nota Interna:</label>
+                                        <textarea class="form-control form-control-sm" id="new-internal-note" rows="2"></textarea>
+                                    </div>
+                                    <button type="button" class="btn btn-secondary btn-sm" onclick="addInternalNote()">Añadir Nota</button>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+             <div class="modal fade" id="addRadicadoModal" tabindex="-1" aria-labelledby="addRadicadoModalLabel" aria-hidden="true">
+              <div class="modal-dialog">
+                <div class="modal-content">
+                  <div class="modal-header">
+                    <h5 class="modal-title" id="addRadicadoModalLabel">Nuevo Radicado (Simulación)</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                  </div>
+                  <div class="modal-body">
+                    <form id="addRadicadoForm">
+                        <div class="mb-3">
+                            <label for="new-radicado-title" class="form-label">Título del Proyecto</label>
+                            <input type="text" class="form-control" id="new-radicado-title" required>
+                        </div>
+                         <div class="mb-3">
+                            <label for="new-radicado-solicitante" class="form-label">Nombre Solicitante</label>
+                            <input type="text" class="form-control" id="new-radicado-solicitante" required>
+                        </div>
+                         <div class="mb-3">
+                            <label for="new-radicado-direccion" class="form-label">Dirección Predio</label>
+                            <input type="text" class="form-control" id="new-radicado-direccion" required>
+                        </div>
+                        <p><small>Nota: Esto solo simula la creación. El ID será generado automáticamente. Estado inicial: Recibido, Pago: Pendiente, Sin asignar.</small></p>
+                         <div class="loader" id="add-radicado-loader"></div>
+                        <button type="submit" class="btn btn-primary">Crear Radicado</button>
+                    </form>
+                  </div>
+                </div>
+              </div>
+            </div>
+        </div>
+
+         <div id="pagos-section" class="page-section d-none">
+            <h2>Control de Pagos de Radicados</h2>
+            <div class="card">
+                <div class="card-header">Estado de Pagos</div>
+                <div class="card-body">
+                     <div class="table-responsive">
+                        <table class="table table-hover table-sm align-middle">
+                            <thead>
+                                <tr>
+                                    <th>ID Radicado</th>
+                                    <th>Título</th>
+                                    <th>Solicitante</th>
+                                    <th>Estado Pago</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="pagos-list">
+                                </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+             <div class="modal fade" id="paymentDetailModal" tabindex="-1" aria-labelledby="paymentDetailModalLabel" aria-hidden="true">
+              <div class="modal-dialog">
+                <div class="modal-content">
+                  <div class="modal-header">
+                    <h5 class="modal-title" id="paymentDetailModalLabel">Actualizar Estado de Pago</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                  </div>
+                  <div class="modal-body">
+                    <form id="editPaymentForm">
+                        <input type="hidden" id="edit-payment-radicado-id">
+                        <p><strong>Radicado:</strong> <span id="payment-radicado-info"></span></p>
+                        <div class="mb-3">
+                            <label for="edit-payment-status" class="form-label">Nuevo Estado de Pago</label>
+                            <select class="form-select" id="edit-payment-status">
+                                <option value="Pendiente">Pendiente</option>
+                                <option value="Pagado">Pagado</option>
+                                <option value="Vencido">Vencido</option>
+                                <option value="Exonerado">Exonerado</option>
+                            </select>
+                        </div>
+                         <div class="loader" id="payment-loader"></div>
+                        <button type="submit" class="btn btn-success">Actualizar Pago</button>
+                    </form>
+                  </div>
+                </div>
+              </div>
+            </div>
+        </div>
+
+        <div id="usuarios-section" class="page-section d-none role-curador">
+             <h2>Gestión de Usuarios y Roles</h2>
+             <div class="card">
+                 <div class="card-header">Lista de Usuarios</div>
+                 <div class="card-body">
+                     <div class="table-responsive">
+                        <table class="table table-hover table-sm align-middle">
+                            <thead>
+                                <tr>
+                                    <th>Nombre</th>
+                                    <th>Email</th>
+                                    <th>Rol</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="users-list">
+                                </tbody>
+                        </table>
+                    </div>
+                     <button class="btn btn-primary mt-3" data-bs-toggle="modal" data-bs-target="#addUserModal"><i class="fas fa-user-plus me-1"></i> Añadir Usuario</button>
+                 </div>
+             </div>
+
+             <div class="modal fade" id="addUserModal" tabindex="-1" aria-labelledby="addUserModalLabel" aria-hidden="true">
+              <div class="modal-dialog">
+                <div class="modal-content">
+                  <div class="modal-header">
+                    <h5 class="modal-title" id="addUserModalLabel">Añadir/Editar Usuario</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                  </div>
+                  <div class="modal-body">
+                    <form id="userForm">
+                        <input type="hidden" id="edit-user-id">
+                        <div class="mb-3">
+                            <label for="user-name" class="form-label">Nombre</label>
+                            <input type="text" class="form-control" id="user-name" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="user-email" class="form-label">Email</label>
+                            <input type="email" class="form-control" id="user-email" required>
+                        </div>
+                         <div class="mb-3">
+                            <label for="user-role" class="form-label">Rol</label>
+                            <select class="form-select" id="user-role" required>
+                                <option value="curador">Curador</option>
+                                <option value="personal">Personal</option>
+                                <option value="revisor">Revisor</option>
+                            </select>
+                        </div>
+                         <div class="loader" id="user-loader"></div>
+                        <button type="submit" class="btn btn-success">Guardar Usuario</button>
+                    </form>
+                  </div>
+                </div>
+              </div>
+            </div>
+        </div>
+
+        <div id="informes-section" class="page-section d-none role-curador">
+            <h2>Informes para Entes de Control</h2>
+            <div class="card">
+                <div class="card-header">Generación de Informes</div>
+                <div class="card-body">
+                    <p>Seleccione el tipo de informe que desea generar (simulación).</p>
+                    <button class="btn btn-secondary me-2 mb-2" onclick="simulateReportGeneration('Informe Trimestral')"><i class="fas fa-file-pdf me-1"></i> Informe Trimestral</button>
+                    <button class="btn btn-secondary me-2 mb-2" onclick="simulateReportGeneration('Informe Anual Actividad')"><i class="fas fa-file-pdf me-1"></i> Informe Anual</button>
+                    <button class="btn btn-secondary mb-2" onclick="simulateReportGeneration('Informe Específico Radicado')"><i class="fas fa-file-pdf me-1"></i> Informe por Radicado</button>
+                    <div id="report-feedback" class="mt-3 alert alert-light d-none"></div>
+                     <div class="loader" id="informe-loader"></div>
+                </div>
+            </div>
+        </div>
+
+        <div id="website-section" class="page-section d-none role-curador">
+             <h2>Gestión del Sitio Web Público</h2>
+             <div class="card">
+                 <div class="card-header">Personalización</div>
+                 <div class="card-body">
+                     <form id="websiteCustomizationForm">
+                         <div class="mb-3">
+                             <label for="template-select" class="form-label">Seleccionar Plantilla</label>
+                             <select class="form-select" id="template-select">
+                                 <option value="moderna">Moderna</option>
+                                 <option value="clasica">Clásica</option>
+                                 <option value="minimalista">Minimalista</option>
+                             </select>
+                         </div>
+                         <div class="mb-3">
+                             <label for="color-picker" class="form-label">Color Principal</label>
+                             <input type="color" class="form-control form-control-color" id="color-picker" value="#0d6efd" title="Elige tu color">
+                         </div>
+                         <div class="mb-3">
+                             <label for="logo-upload" class="form-label">Subir Logo (Simulado)</label>
+                             <input class="form-control" type="file" id="logo-upload" accept="image/*">
+                             <small id="logo-upload-feedback" class="d-block mt-1"></small>
+                         </div>
+                         <div class="mb-3">
+                             <label for="doc-upload" class="form-label">Subir Documento Público (Simulado)</label>
+                             <input class="form-control" type="file" id="doc-upload" accept=".pdf,.doc,.docx">
+                              <small id="doc-upload-feedback" class="d-block mt-1"></small>
+                         </div>
+                          <div class="loader" id="website-loader"></div>
+                         <button type="submit" class="btn btn-success">Guardar Cambios</button>
+                     </form>
+                 </div>
+             </div>
+        </div>
+
+        <div id="documentos-section" class="page-section d-none">
+            <h2>Gestión Documental Interna</h2>
+            <div class="card">
+                <div class="card-header">Subir y Listar Documentos</div>
+                <div class="card-body">
+                    <form id="internalDocForm" class="mb-4">
+                         <div class="mb-3">
+                             <label for="internal-doc-radicado" class="form-label">Asociar a Radicado (Opcional)</label>
+                             <select class="form-select" id="internal-doc-radicado">
+                                 <option value="">Ninguno</option>
+                                  </select>
+                         </div>
+                         <div class="mb-3">
+                             <label for="internal-doc-upload" class="form-label">Seleccionar Documento</label>
+                             <input class="form-control" type="file" id="internal-doc-upload" required>
+                         </div>
+                          <div class="loader" id="doc-loader"></div>
+                         <button type="submit" class="btn btn-primary"><i class="fas fa-upload me-1"></i> Subir Documento (Simulado)</button>
+                    </form>
+
+                    <h5>Documentos Subidos</h5>
+                     <div class="list-group" id="document-list" style="max-height: 300px; overflow-y: auto;">
+                        </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="analisis-section" class="page-section d-none role-curador">
+            <h2>Herramientas de Análisis y Reportes</h2>
+            <div class="card">
+                <div class="card-header">Estadísticas Clave</div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <h6>Radicados por Estado</h6>
+                            <canvas id="radicadosStatusChart"></canvas>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <h6>PQRS Recibidas por Mes</h6>
+                            <canvas id="pqrsMonthlyChart"></canvas>
+                        </div>
+                         <div class="col-md-6 mb-3">
+                            <h6>Radicados por Asignado</h6>
+                            <canvas id="radicadosAssignedChart"></canvas>
+                        </div>
+                         <div class="col-md-6 mb-3">
+                            <h6>Estado de Pagos</h6>
+                            <canvas id="paymentStatusChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="mapas-section" class="page-section d-none">
+            <h2>Herramientas de Mapas con POT</h2>
+             <div class="card">
+                 <div class="card-header">Mapa de Zonificación (Simulado)</div>
+                 <div class="card-body">
+                     <p>Haz clic en las áreas marcadas para ver información simulada de zonificación.</p>
+                     <div class="map-container">
+                         <img src="https://placehold.co/800x500/e8e8e8/666?text=Mapa+POT+Simulado" alt="Mapa POT Simulado" id="pot-map-img">
+                         <div class="map-overlay" style="top: 20%; left: 30%;" data-bs-toggle="tooltip" title="Zona Residencial R-1: Densidad baja. Uso principal vivienda unifamiliar.">1</div>
+                         <div class="map-overlay" style="top: 50%; left: 55%;" data-bs-toggle="tooltip" title="Zona Comercial C-2: Comercio vecinal y servicios. Altura máx. 4 pisos.">2</div>
+                         <div class="map-overlay" style="top: 75%; left: 25%;" data-bs-toggle="tooltip" title="Zona Industrial I-1: Industria ligera no contaminante. Requiere estudio de impacto.">3</div>
+                          <div class="map-overlay" style="top: 40%; left: 75%;" data-bs-toggle="tooltip" title="Zona de Protección Ambiental P-A: Prohibido construir. Conservación de flora y fauna.">4</div>
+                     </div>
+                 </div>
+             </div>
+        </div>
+
+        <div id="pqrs-section" class="page-section d-none">
+            <h2>Gestión de PQRS</h2>
+             <div class="card mb-4">
+                 <div class="card-header">Registrar Nueva PQRS</div>
+                 <div class="card-body">
+                     <form id="pqrsForm">
+                         <div class="mb-3">
+                             <label for="pqrs-type" class="form-label">Tipo</label>
+                             <select class="form-select" id="pqrs-type" required>
+                                 <option value="Petición">Petición</option>
+                                 <option value="Queja">Queja</option>
+                                 <option value="Reclamo">Reclamo</option>
+                                 <option value="Sugerencia">Sugerencia</option>
+                             </select>
+                         </div>
+                         <div class="mb-3">
+                             <label for="pqrs-subject" class="form-label">Asunto</label>
+                             <input type="text" class="form-control" id="pqrs-subject" required>
+                         </div>
+                          <div class="mb-3">
+                             <label for="pqrs-details" class="form-label">Detalles</label>
+                             <textarea class="form-control" id="pqrs-details" rows="3" required></textarea>
+                         </div>
+                         <div class="mb-3">
+                             <label for="pqrs-contact" class="form-label">Email de Contacto</label>
+                             <input type="email" class="form-control" id="pqrs-contact" required>
+                         </div>
+                          <div class="loader" id="pqrs-loader"></div>
+                         <button type="submit" class="btn btn-primary">Enviar PQRS</button>
+                     </form>
+                 </div>
+             </div>
+
+             <div class="card">
+                 <div class="card-header">Lista de PQRS Recibidas</div>
+                 <div class="card-body">
+                     <div class="table-responsive">
+                        <table class="table table-hover table-sm align-middle">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Tipo</th>
+                                    <th>Asunto</th>
+                                    <th>Fecha</th>
+                                    <th>Estado</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="pqrs-list">
+                                </tbody>
+                        </table>
+                    </div>
+                 </div>
+             </div>
+
+             <div class="modal fade" id="pqrsDetailModal" tabindex="-1" aria-labelledby="pqrsDetailModalLabel" aria-hidden="true">
+              <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                  <div class="modal-header">
+                    <h5 class="modal-title" id="pqrsDetailModalLabel">Detalle PQRS</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                  </div>
+                  <div class="modal-body">
+                    <p><strong>ID:</strong> <span id="detail-pqrs-id"></span></p>
+                    <p><strong>Tipo:</strong> <span id="detail-pqrs-type"></span></p>
+                    <p><strong>Asunto:</strong> <span id="detail-pqrs-subject"></span></p>
+                    <p><strong>Contacto:</strong> <span id="detail-pqrs-contact"></span></p>
+                    <p><strong>Fecha:</strong> <span id="detail-pqrs-date"></span></p>
+                    <p><strong>Detalles:</strong></p>
+                    <p><span id="detail-pqrs-details"></span></p>
+                    <hr>
+                    <form id="respondPqrsForm">
+                         <input type="hidden" id="respond-pqrs-id">
+                         <div class="mb-3">
+                             <label for="pqrs-response" class="form-label">Respuesta</label>
+                             <textarea class="form-control" id="pqrs-response" rows="4" required></textarea>
+                         </div>
+                         <div class="mb-3">
+                            <label for="pqrs-status-update" class="form-label">Actualizar Estado</label>
+                            <select class="form-select" id="pqrs-status-update" required>
+                                <option value="Recibido">Recibido</option>
+                                <option value="En Proceso">En Proceso</option>
+                                <option value="Respondido">Respondido</option>
+                                <option value="Cerrado">Cerrado</option>
+                            </select>
+                        </div>
+                         <div class="loader" id="pqrs-respond-loader"></div>
+                        <button type="submit" class="btn btn-success">Enviar Respuesta y Actualizar</button>
+                    </form>
+                  </div>
+                </div>
+              </div>
+            </div>
+        </div>
+
+         <div id="soporte-section" class="page-section d-none">
+            <h2>Soporte Técnico SaaS</h2>
+             <div class="card mb-4">
+                 <div class="card-header">Crear Ticket de Soporte</div>
+                 <div class="card-body">
+                     <form id="soporteForm">
+                         <div class="mb-3">
+                             <label for="soporte-category" class="form-label">Categoría</label>
+                             <select class="form-select" id="soporte-category" required>
+                                 <option value="">Seleccione una categoría...</option>
+                                 <option value="Error Funcionalidad">Error Funcionalidad</option>
+                                 <option value="Consulta General">Consulta General</option>
+                                 <option value="Problema Acceso">Problema Acceso</option>
+                                 <option value="Sugerencia Mejora">Sugerencia Mejora</option>
+                                 <option value="Otro">Otro</option>
+                             </select>
+                         </div>
+                         <div class="mb-3">
+                             <label for="soporte-subject" class="form-label">Asunto</label>
+                             <input type="text" class="form-control" id="soporte-subject" required>
+                         </div>
+                          <div class="mb-3">
+                             <label for="soporte-description" class="form-label">Descripción del Problema</label>
+                             <textarea class="form-control" id="soporte-description" rows="4" required></textarea>
+                         </div>
+                          <div class="mb-3">
+                             <label for="soporte-priority" class="form-label">Prioridad</label>
+                             <select class="form-select" id="soporte-priority">
+                                 <option value="Baja">Baja</option>
+                                 <option value="Media" selected>Media</option>
+                                 <option value="Alta">Alta</option>
+                                 <option value="Urgente">Urgente</option>
+                             </select>
+                         </div>
+                          <div class="loader" id="soporte-loader"></div>
+                         <button type="submit" class="btn btn-primary">Enviar Ticket</button>
+                     </form>
+                 </div>
+             </div>
+
+             <div class="card">
+                 <div class="card-header">Mis Tickets de Soporte</div>
+                 <div class="card-body">
+                      <div class="table-responsive">
+                        <table class="table table-hover table-sm align-middle">
+                            <thead>
+                                <tr>
+                                    <th>ID Ticket</th>
+                                    <th>Categoría</th>
+                                    <th>Asunto</th>
+                                    <th>Fecha</th>
+                                    <th>Estado</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="support-tickets-list">
+                                </tbody>
+                        </table>
+                    </div>
+                 </div>
+             </div>
+
+             <div class="modal fade" id="ticketDetailModal" tabindex="-1" aria-labelledby="ticketDetailModalLabel" aria-hidden="true">
+              <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                  <div class="modal-header">
+                    <h5 class="modal-title" id="ticketDetailModalLabel">Detalle Ticket de Soporte</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                  </div>
+                  <div class="modal-body">
+                    <p><strong>ID Ticket:</strong> <span id="detail-ticket-id"></span></p>
+                    <p><strong>Categoría:</strong> <span id="detail-ticket-category"></span></p>
+                    <p><strong>Asunto:</strong> <span id="detail-ticket-subject"></span></p>
+                    <p><strong>Prioridad:</strong> <span id="detail-ticket-priority"></span></p>
+                    <p><strong>Fecha Creación:</strong> <span id="detail-ticket-date"></span></p>
+                    <p><strong>Estado:</strong> <span id="detail-ticket-status"></span></p>
+                    <p><strong>Descripción:</strong></p>
+                    <p><span id="detail-ticket-description"></span></p>
+                    <hr>
+                    <h6>Respuesta del Soporte (Simulado):</h6>
+                    <p id="detail-ticket-response">Aún no hay respuesta.</p>
+                  </div>
+                   <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                    </div>
+                </div>
+              </div>
+            </div>
+        </div>
+
+
+         <div id="message-box" class="alert alert-dismissible fade show d-none position-fixed bottom-0 end-0 m-3" role="alert" style="z-index: 1050;">
+             <span id="message-text"></span>
+             <button type="button" class="btn-close" onclick="hideMessage()" aria-label="Close"></button>
+         </div>
+
+    </div> <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        // --- Initialization and Data Handling ---
+        const DB_PREFIX = 'curaduriaApp_v3_'; // Updated prefix for version 3
+
+        // Function to get data from localStorage
+        function getStore(key) {
+            try {
+                const data = localStorage.getItem(DB_PREFIX + key);
+                return data ? JSON.parse(data) : null;
+            } catch (e) {
+                console.error("Error reading from localStorage", key, e);
+                return null;
+            }
+        }
+
+        // Function to save data to localStorage
+        function setStore(key, value) {
+             try {
+                localStorage.setItem(DB_PREFIX + key, JSON.stringify(value));
+                // Avoid double logging by removing direct call here
+                // logActivity(`Datos actualizados para: ${key}`);
+            } catch (e) {
+                 console.error("Error writing to localStorage", key, e);
+                 showMessage("Error al guardar datos. El almacenamiento local podría estar lleno.", "danger");
+            }
+        }
+
+        // Initialize sample data if none exists
+        function initializeData() {
+            // Sample Users (Needed first for assignment)
+             if (!getStore('users')) {
+                 setStore('users', [
+                    { id: 'USR001', name: 'Carlos Mendoza', email: 'c.mendoza@curaduria.gov.co', role: 'curador' },
+                    { id: 'USR002', name: 'Ana Rodriguez', email: 'a.rodriguez@curaduria.gov.co', role: 'personal' },
+                    { id: 'USR003', name: 'Luis Fernandez', email: 'l.fernandez@curaduria.gov.co', role: 'revisor' },
+                    { id: 'USR004', name: 'Sofia Vargas', email: 's.vargas@curaduria.gov.co', role: 'revisor' }
+                ]);
+            }
+
+            // Sample Radicados with ENHANCED fields
+            if (!getStore('radicados')) {
+                const now = new Date();
+                setStore('radicados', [
+                    {
+                        id: 'RAD001', title: 'Proyecto Edificio Alfa', solicitante: 'Constructora ABC', direccion: 'Calle 10 # 5-20', status: 'En Revisión',
+                        created: new Date(now.setDate(now.getDate() - 10)).toISOString(), // Use created instead of fechaRadicacion for consistency
+                        paymentStatus: 'Pagado', assignedTo: 'USR003',
+                        historial: [
+                            { timestamp: new Date(now.setDate(now.getDate() - 10)).toISOString(), status: 'Recibido', user: 'Sistema' },
+                            { timestamp: new Date(now.setDate(now.getDate() - 9)).toISOString(), status: 'En Revisión', user: 'Carlos Mendoza', comment: 'Asignado a Luis Fernandez' }
+                        ],
+                        internalNotes: [
+                            { timestamp: new Date(now.setDate(now.getDate() - 8)).toISOString(), user: 'Luis Fernandez', note: 'Verificar linderos con plano adjunto.' }
+                        ]
+                    },
+                    {
+                        id: 'RAD002', title: 'Licencia Construcción Lote Beta', solicitante: 'Inversiones XYZ', direccion: 'Carrera 7 # 80-15', status: 'Recibido',
+                        created: new Date(now.setDate(now.getDate() - 5)).toISOString(),
+                        paymentStatus: 'Pendiente', assignedTo: null,
+                        historial: [ { timestamp: new Date(now.setDate(now.getDate() - 5)).toISOString(), status: 'Recibido', user: 'Sistema' } ],
+                        internalNotes: []
+                    },
+                    {
+                        id: 'RAD003', title: 'Modificación Planos Gamma', solicitante: 'Juan Pérez', direccion: 'Avenida Siempre Viva 123', status: 'Aprobado',
+                        created: new Date(now.setDate(now.getDate() - 20)).toISOString(),
+                        paymentStatus: 'Pagado', assignedTo: 'USR004',
+                        historial: [
+                            { timestamp: new Date(now.setDate(now.getDate() - 20)).toISOString(), status: 'Recibido', user: 'Sistema' },
+                            { timestamp: new Date(now.setDate(now.getDate() - 19)).toISOString(), status: 'En Revisión', user: 'Carlos Mendoza', comment: 'Asignado a Sofia Vargas' },
+                            { timestamp: new Date(now.setDate(now.getDate() - 15)).toISOString(), status: 'Aprobado', user: 'Sofia Vargas' }
+                        ],
+                        internalNotes: [
+                             { timestamp: new Date(now.setDate(now.getDate() - 16)).toISOString(), user: 'Sofia Vargas', note: 'Modificaciones cumplen norma.' }
+                        ]
+                    },
+                    {
+                        id: 'RAD004', title: 'Concepto Norma Urbanística Delta', solicitante: 'Ana García', direccion: 'Transversal 3 # 45-67', status: 'Recibido',
+                        created: new Date(now.setDate(now.getDate() - 2)).toISOString(),
+                        paymentStatus: 'Pendiente', assignedTo: null,
+                         historial: [ { timestamp: new Date(now.setDate(now.getDate() - 2)).toISOString(), status: 'Recibido', user: 'Sistema' } ],
+                        internalNotes: []
+                    },
+                    {
+                        id: 'RAD005', title: 'Reconocimiento Edificación Epsilon', solicitante: 'Pedro Ramirez', direccion: 'Diagonal 100 # 10-11', status: 'Requiere Ajustes',
+                        created: new Date(now.setDate(now.getDate() - 12)).toISOString(),
+                        paymentStatus: 'Pagado', assignedTo: 'USR003',
+                         historial: [
+                            { timestamp: new Date(now.setDate(now.getDate() - 12)).toISOString(), status: 'Recibido', user: 'Sistema' },
+                            { timestamp: new Date(now.setDate(now.getDate() - 11)).toISOString(), status: 'En Revisión', user: 'Carlos Mendoza', comment: 'Asignado a Luis Fernandez' },
+                            { timestamp: new Date(now.setDate(now.getDate() - 7)).toISOString(), status: 'Requiere Ajustes', user: 'Luis Fernandez', comment: 'Falta certificado de tradición actualizado.' }
+                        ],
+                        internalNotes: []
+                    }
+                ]);
+            }
+
+             if (!getStore('pqrs')) {
+                setStore('pqrs', [
+                    { id: 'PQR001', type: 'Queja', subject: 'Demora en trámite RAD001', details: 'El trámite lleva mucho tiempo...', contact: 'ciudadano@email.com', date: new Date(2024, 10, 20).toISOString(), status: 'En Proceso', response: 'Estamos revisando su caso.' },
+                     { id: 'PQR002', type: 'Sugerencia', subject: 'Mejorar atención telefónica', details: 'Sería bueno tener más líneas...', contact: 'otro@email.com', date: new Date(2024, 11, 2).toISOString(), status: 'Recibido', response: '' },
+                     { id: 'PQR003', type: 'Petición', subject: 'Consulta sobre norma', details: 'Quisiera saber la norma aplicable a...', contact: 'interesado@email.com', date: new Date(2024, 11, 9).toISOString(), status: 'Respondido', response: 'La norma aplicable es XYZ...' }
+                ]);
+            }
+            if (!getStore('documents')) {
+                setStore('documents', [
+                    { id: 'DOC001', name: 'Plano_Estructural_Alfa.pdf', radicadoId: 'RAD001', uploadDate: new Date().toISOString() },
+                    { id: 'DOC002', name: 'Estudio_Suelos_Beta.pdf', radicadoId: 'RAD002', uploadDate: new Date().toISOString() },
+                    { id: 'DOC003', name: 'Acta_Vecinos_Gamma.docx', radicadoId: 'RAD003', uploadDate: new Date().toISOString() }
+                ]);
+            }
+             if (!getStore('websiteConfig')) {
+                setStore('websiteConfig', {
+                    template: 'moderna',
+                    color: '#0d6efd',
+                    logo: null,
+                    publicDocs: []
+                });
+            }
+             if (!getStore('activityLog')) {
+                setStore('activityLog', []);
+            }
+             if (!getStore('supportTickets')) {
+                setStore('supportTickets', [
+                     { id: 'SUP001', category: 'Consulta General', subject: 'Duda sobre carga de documentos', description: 'No encuentro la opción para subir anexos.', priority: 'Media', date: new Date(2024, 11, 1).toISOString(), status: 'Abierto', response: null },
+                     { id: 'SUP002', category: 'Error Funcionalidad', subject: 'Gráfico de análisis no carga', description: 'El gráfico de radicados por estado aparece vacío.', priority: 'Alta', date: new Date(2024, 11, 5).toISOString(), status: 'Cerrado', response: 'Se identificó y corrigió un problema con la fuente de datos. Por favor, verifique.' }
+                ]);
+            }
+        }
+
+        // --- UI Interaction ---
+        const sections = document.querySelectorAll('.page-section');
+        const navLinks = document.querySelectorAll('.sidebar .nav-link');
+        const roleSelector = document.getElementById('roleSelector');
+        const messageBox = document.getElementById('message-box');
+        const messageText = document.getElementById('message-text');
+        let currentEditingRadicadoId = null; // To track which radicado is open in the modal
+
+        // Function to show a specific section
+        function showSection(sectionId) {
+            sections.forEach(section => {
+                section.classList.add('d-none');
+            });
+            const activeSection = document.getElementById(sectionId + '-section');
+            if (activeSection) {
+                activeSection.classList.remove('d-none');
+                if (['analisis'].includes(sectionId)) {
+                    setTimeout(renderCharts, 50);
+                }
+            } else {
+                console.warn(`Section not found: ${sectionId}-section`);
+                document.getElementById('dashboard-section').classList.remove('d-none');
+                sectionId = 'dashboard';
+            }
+
+            navLinks.forEach(link => {
+                link.classList.remove('active');
+                if (link.closest('a').dataset.section === sectionId) {
+                    link.classList.add('active');
+                }
+            });
+        }
+
+        // Event listeners for navigation links
+        navLinks.forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                const sectionId = e.target.closest('a').dataset.section;
+                showSection(sectionId);
+            });
+        });
+
+        // Function to show temporary messages
+        function showMessage(text, type = 'success') {
+            messageText.textContent = text;
+            messageBox.className = `alert alert-${type} alert-dismissible fade show position-fixed bottom-0 end-0 m-3`;
+            messageBox.classList.remove('d-none');
+            setTimeout(hideMessage, 5000);
+        }
+
+        function hideMessage() {
+             messageBox.classList.add('d-none');
+        }
+
+         // Function to show/hide loaders
+        function showLoader(loaderId) {
+            const loader = document.getElementById(loaderId);
+            if(loader) loader.style.display = 'block';
+        }
+        function hideLoader(loaderId) {
+             const loader = document.getElementById(loaderId);
+            if(loader) loader.style.display = 'none';
+        }
+
+        // --- Role-Based Access Simulation ---
+        function applyRolePermissions(role) {
+            const isCurador = (role === 'curador');
+            console.log(`Applying role: ${role}, isCurador: ${isCurador}`);
+
+            document.querySelectorAll('.role-curador').forEach(el => {
+                el.style.display = isCurador ? '' : 'none';
+            });
+             document.querySelectorAll('.role-personal').forEach(el => {
+                 el.style.display = '';
+            });
+
+            const adminSections = ["usuarios", "informes", "website", "analisis"];
+            navLinks.forEach(link => {
+                const section = link.dataset.section;
+                if (adminSections.includes(section)) {
+                    link.parentElement.style.display = isCurador ? 'block' : 'none';
+                } else {
+                     link.parentElement.style.display = 'block';
+                }
+            });
+
+            // Re-render lists to apply role-specific elements within them
+            if (document.getElementById('radicados-list')) renderRadicados();
+            if (document.getElementById('pagos-list')) renderPagos();
+            if (document.getElementById('users-list') && isCurador) renderUsers();
+            if (document.getElementById('document-list')) renderDocuments();
+            if (document.getElementById('pqrs-list')) renderPqrs();
+            if (document.getElementById('support-tickets-list')) renderSupportTickets();
+
+            // Ensure internal notes section in modal reflects current role
+             const internalNotesSection = document.getElementById('internal-notes-section');
+             if (internalNotesSection) {
+                 internalNotesSection.style.display = isCurador ? '' : 'none';
+             }
+
+
+            const currentActiveSection = document.querySelector('.page-section:not(.d-none)');
+            if (currentActiveSection) {
+                 const sectionId = currentActiveSection.id.replace('-section', '');
+                 const sectionNavLink = document.querySelector(`.sidebar a[data-section="${sectionId}"]`);
+                 if (sectionNavLink && sectionNavLink.parentElement.style.display === 'none') {
+                    console.log(`Current section ${sectionId} hidden for role ${role}, switching to dashboard.`);
+                    showSection('dashboard');
+                 }
+            }
+
+            // No need to log activity for role change simulation
+            // logActivity(`Rol cambiado a: ${role}`);
+        }
+
+
+        roleSelector.addEventListener('change', (e) => {
+            applyRolePermissions(e.target.value);
+        });
+
+        // --- Activity Log ---
+        function logActivity(message, type = 'log') { // Added type for potential filtering/styling
+            let log = getStore('activityLog') || [];
+            if (log.length >= 30) {
+                log.shift();
+            }
+            log.push({ timestamp: new Date().toISOString(), message: message, type: type });
+            setStore('activityLog', log); // Save the updated log
+            renderActivityLog();
+        }
+
+        function renderActivityLog() {
+            const log = getStore('activityLog') || [];
+            const listElement = document.getElementById('recent-activity');
+            if (!listElement) return;
+            listElement.innerHTML = '';
+
+            if (log.length === 0) {
+                 listElement.innerHTML = '<li class="list-group-item">No hay actividad reciente.</li>';
+                 return;
+            }
+
+            log.slice().reverse().forEach(entry => {
+                const li = document.createElement('li');
+                li.className = 'list-group-item small border-0';
+                const time = new Date(entry.timestamp).toLocaleString('es-CO', { dateStyle: 'short', timeStyle: 'short'});
+                li.textContent = `[${time}] ${entry.message}`;
+                // Optional: Add styling based on entry.type
+                listElement.appendChild(li);
+            });
+        }
+
+
+        // --- Feature: Radicados ---
+        const radicadosList = document.getElementById('radicados-list');
+        const editRadicadoForm = document.getElementById('editRadicadoForm');
+        const addRadicadoForm = document.getElementById('addRadicadoForm');
+        const radicadoDetailModalEl = document.getElementById('radicadoDetailModal');
+        const radicadoDetailModal = new bootstrap.Modal(radicadoDetailModalEl);
+        const addRadicadoModalEl = document.getElementById('addRadicadoModal');
+        const addRadicadoModal = new bootstrap.Modal(addRadicadoModalEl);
+
+        function renderRadicados() {
+            const radicados = getStore('radicados') || [];
+            const users = getStore('users') || [];
+            radicadosList.innerHTML = '';
+            const radicadoSelects = document.querySelectorAll('#internal-doc-radicado');
+
+             radicadoSelects.forEach(select => {
+                const currentValue = select.value;
+                select.querySelectorAll('option:not([value=""])').forEach(opt => opt.remove());
+                 radicados.forEach(rad => {
+                    const option = document.createElement('option');
+                    option.value = rad.id;
+                    option.textContent = `${rad.id} - ${rad.title}`;
+                    select.appendChild(option);
+                });
+                select.value = currentValue;
+            });
+
+            if (radicados.length === 0) {
+                radicadosList.innerHTML = '<tr><td colspan="6">No hay radicados registrados.</td></tr>';
+            } else {
+                 // Sort by creation date, newest first
+                 radicados.sort((a, b) => new Date(b.created) - new Date(a.created));
+
+                radicados.forEach(rad => {
+                    const assignedUser = users.find(u => u.id === rad.assignedTo);
+                    const assignedName = assignedUser ? assignedUser.name : '<em class="text-muted">Sin asignar</em>';
+                    const row = `
+                        <tr>
+                            <td>${rad.id}</td>
+                            <td>${rad.title}</td>
+                            <td>${rad.solicitante || '-'}</td>
+                            <td><span class="badge bg-${getStatusColor(rad.status)}">${rad.status}</span></td>
+                            <td>${assignedName}</td>
+                            <td>
+                                <button class="btn btn-sm btn-info" title="Ver Detalles" onclick="viewRadicado('${rad.id}')"><i class="fas fa-eye"></i></button>
+                                <button class="btn btn-sm btn-danger role-curador" title="Eliminar Radicado" onclick="deleteRadicado('${rad.id}')"><i class="fas fa-trash"></i></button>
+                            </td>
+                        </tr>
+                    `;
+                    radicadosList.innerHTML += row;
+                });
+            }
+            document.querySelectorAll('#radicados-list .role-curador').forEach(btn => {
+                 btn.style.display = (roleSelector.value === 'curador') ? '' : 'none';
+            });
+            updateDashboardCounts();
+        }
+
+        function getStatusColor(status) {
+            switch (status) {
+                case 'Recibido': return 'secondary';
+                case 'En Revisión': return 'info';
+                case 'Requiere Ajustes': return 'warning text-dark';
+                case 'Aprobado': return 'success';
+                case 'Rechazado': return 'danger';
+                case 'Archivado': return 'dark';
+                default: return 'light';
+            }
+        }
+
+         function populateUserDropdown(selectElementId, selectedUserId) {
+            const users = getStore('users') || [];
+            const select = document.getElementById(selectElementId);
+            select.innerHTML = '<option value="">Sin asignar</option>';
+            users.forEach(user => {
+                const option = document.createElement('option');
+                option.value = user.id;
+                option.textContent = `${user.name} (${user.role})`;
+                select.appendChild(option);
+            });
+            select.value = selectedUserId || "";
+        }
+
+        // Enhanced viewRadicado function
+        function viewRadicado(id) {
+            const radicados = getStore('radicados');
+            const rad = radicados.find(r => r.id === id);
+            currentEditingRadicadoId = id; // Store the ID of the radicado being viewed/edited
+
+            if (rad) {
+                // Populate General Info
+                document.getElementById('edit-radicado-id').value = rad.id;
+                document.getElementById('detail-radicado-id-display').textContent = rad.id;
+                document.getElementById('detail-radicado-title').textContent = rad.title;
+                document.getElementById('detail-radicado-solicitante').textContent = rad.solicitante || 'N/A';
+                document.getElementById('detail-radicado-direccion').textContent = rad.direccion || 'N/A';
+                document.getElementById('detail-radicado-fecha').textContent = rad.created ? new Date(rad.created).toLocaleDateString('es-CO') : 'N/A';
+
+                // Populate Form Fields
+                document.getElementById('edit-radicado-status').value = rad.status;
+                populateUserDropdown('edit-radicado-assigned', rad.assignedTo);
+
+                // Populate History
+                const historyList = document.getElementById('detail-radicado-history');
+                historyList.innerHTML = ''; // Clear previous
+                if (rad.historial && rad.historial.length > 0) {
+                    rad.historial.forEach(item => {
+                        const li = document.createElement('li');
+                        li.className = 'history-item';
+                        const itemDate = new Date(item.timestamp).toLocaleString('es-CO', { dateStyle: 'short', timeStyle: 'short' });
+                        li.innerHTML = `
+                            <div class="small text-muted">${itemDate} - ${item.user || 'Sistema'}</div>
+                            <div class="fw-bold">${item.status}</div>
+                            ${item.comment ? `<div class="small text-muted fst-italic">"${item.comment}"</div>` : ''}
+                        `;
+                        historyList.appendChild(li);
+                    });
+                } else {
+                    historyList.innerHTML = '<li class="text-muted small">No hay historial disponible.</li>';
+                }
+
+                // Populate Internal Notes (and show/hide section based on role)
+                const internalNotesList = document.getElementById('detail-radicado-internal-notes');
+                internalNotesList.innerHTML = ''; // Clear previous
+                const internalNotesSection = document.getElementById('internal-notes-section');
+                const isCurador = roleSelector.value === 'curador';
+                internalNotesSection.style.display = isCurador ? '' : 'none'; // Show/hide based on role
+
+                if (isCurador) {
+                    if (rad.internalNotes && rad.internalNotes.length > 0) {
+                        rad.internalNotes.forEach(note => {
+                            const li = document.createElement('li');
+                            li.className = 'small border-bottom pb-1 mb-1';
+                            const noteDate = new Date(note.timestamp).toLocaleString('es-CO', { dateStyle: 'short', timeStyle: 'short' });
+                            li.innerHTML = `
+                                <div><strong>${note.user || 'Usuario'}:</strong> ${note.note}</div>
+                                <div class="text-muted fst-italic">${noteDate}</div>
+                            `;
+                            internalNotesList.appendChild(li);
+                        });
+                    } else {
+                        internalNotesList.innerHTML = '<li class="text-muted small">No hay notas internas.</li>';
+                    }
+                    document.getElementById('new-internal-note').value = ''; // Clear textarea
+                }
+
+
+                document.getElementById('radicadoDetailModalLabel').textContent = `Detalle Radicado ${rad.id}`;
+                radicadoDetailModal.show();
+            } else {
+                 currentEditingRadicadoId = null;
+                 showMessage('Error', `No se encontró el radicado con ID ${id}.`, 'danger');
+            }
+        }
+
+         editRadicadoForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            showLoader('radicado-loader');
+            const id = document.getElementById('edit-radicado-id').value;
+            const newStatus = document.getElementById('edit-radicado-status').value;
+            const newAssignedTo = document.getElementById('edit-radicado-assigned').value || null;
+
+            let radicados = getStore('radicados');
+            const index = radicados.findIndex(r => r.id === id);
+
+            if (index !== -1) {
+                const rad = radicados[index];
+                const oldStatus = rad.status;
+                const oldAssignedTo = rad.assignedTo;
+                let changesMade = false;
+                let historyComment = '';
+                const currentUser = getStore('users')?.find(u => u.role === roleSelector.value) || { name: roleSelector.value }; // Simulate user making change
+
+                // Update status if changed
+                if (rad.status !== newStatus) {
+                    rad.status = newStatus;
+                    rad.historial = rad.historial || [];
+                    rad.historial.push({
+                        timestamp: new Date().toISOString(),
+                        status: newStatus,
+                        user: currentUser.name
+                    });
+                    changesMade = true;
+                    logActivity(`Estado radicado ${id} cambiado a ${newStatus}`, 'update');
+                }
+
+                // Update assignment if changed
+                if (rad.assignedTo !== newAssignedTo) {
+                    rad.assignedTo = newAssignedTo;
+                     const assignedUserName = getStore('users')?.find(u => u.id === newAssignedTo)?.name || 'nadie';
+                     historyComment = `Asignado a ${assignedUserName}`;
+                     // Add separate history entry for assignment or append comment? Let's append.
+                     if (rad.historial && rad.historial.length > 0) {
+                        // Add comment to the last history entry if it was the status change, otherwise add new entry
+                        const lastEntry = rad.historial[rad.historial.length - 1];
+                         if (lastEntry.status === newStatus && !lastEntry.comment) { // Avoid overwriting existing comments
+                             lastEntry.comment = historyComment;
+                         } else {
+                              rad.historial.push({ timestamp: new Date().toISOString(), status: rad.status, user: currentUser.name, comment: historyComment });
+                         }
+                     } else {
+                         // Should not happen if status changed, but as fallback
+                         rad.historial = [{ timestamp: new Date().toISOString(), status: rad.status, user: currentUser.name, comment: historyComment }];
+                     }
+                    changesMade = true;
+                    logActivity(`Radicado ${id} asignado a ${assignedUserName}`, 'update');
+                }
+
+                if (changesMade) {
+                    setStore('radicados', radicados);
+                }
+
+                setTimeout(() => {
+                    hideLoader('radicado-loader');
+                    if (changesMade) {
+                        renderRadicados();
+                        renderPagos();
+                        showMessage(`Radicado ${id} actualizado exitosamente.`);
+                        renderCharts();
+                    } else {
+                         showMessage(`No se realizaron cambios en el radicado ${id}.`, 'info');
+                    }
+                    radicadoDetailModal.hide();
+                    currentEditingRadicadoId = null; // Clear current editing ID
+                }, 500);
+            } else {
+                 hideLoader('radicado-loader');
+                 showMessage('Error: No se encontró el radicado.', 'danger');
+                 currentEditingRadicadoId = null;
+            }
+        });
+
+         // Function to add internal note (called from modal)
+         function addInternalNote() {
+             const noteText = document.getElementById('new-internal-note').value.trim();
+             if (!noteText || !currentEditingRadicadoId) return;
+
+             let radicados = getStore('radicados');
+             const index = radicados.findIndex(r => r.id === currentEditingRadicadoId);
+
+             if (index !== -1) {
+                 const rad = radicados[index];
+                 rad.internalNotes = rad.internalNotes || [];
+                 const currentUser = getStore('users')?.find(u => u.role === roleSelector.value) || { name: roleSelector.value }; // Simulate user
+
+                 rad.internalNotes.push({
+                     timestamp: new Date().toISOString(),
+                     user: currentUser.name,
+                     note: noteText
+                 });
+                 setStore('radicados', radicados);
+                 logActivity(`Nota interna añadida al radicado ${currentEditingRadicadoId}`, 'note');
+
+                 // Refresh the notes list in the modal immediately
+                 const internalNotesList = document.getElementById('detail-radicado-internal-notes');
+                 internalNotesList.innerHTML = ''; // Clear
+                  if (rad.internalNotes && rad.internalNotes.length > 0) {
+                     rad.internalNotes.forEach(note => {
+                         const li = document.createElement('li');
+                         li.className = 'small border-bottom pb-1 mb-1';
+                         const noteDate = new Date(note.timestamp).toLocaleString('es-CO', { dateStyle: 'short', timeStyle: 'short' });
+                         li.innerHTML = `
+                             <div><strong>${note.user || 'Usuario'}:</strong> ${note.note}</div>
+                             <div class="text-muted fst-italic">${noteDate}</div>
+                         `;
+                         internalNotesList.appendChild(li);
+                     });
+                 }
+                 document.getElementById('new-internal-note').value = ''; // Clear textarea
+                 showMessage('Nota interna añadida.', 'success');
+             } else {
+                 showMessage('Error al añadir nota: No se encontró el radicado.', 'danger');
+             }
+         }
+
+
+         addRadicadoForm.addEventListener('submit', (e) => {
+             e.preventDefault();
+             showLoader('add-radicado-loader');
+             const title = document.getElementById('new-radicado-title').value;
+             const solicitante = document.getElementById('new-radicado-solicitante').value; // Get new fields
+             const direccion = document.getElementById('new-radicado-direccion').value;     // Get new fields
+
+             let radicados = getStore('radicados') || [];
+             const newIdNumber = (radicados.length > 0 ? Math.max(...radicados.map(r => parseInt(r.id.replace('RAD', '')))) : 0) + 1;
+             const newId = `RAD${String(newIdNumber).padStart(3, '0')}`;
+             const creationTime = new Date().toISOString();
+
+             radicados.push({
+                 id: newId,
+                 title: title,
+                 solicitante: solicitante, // Save new field
+                 direccion: direccion,     // Save new field
+                 status: 'Recibido',
+                 created: creationTime,    // Save creation time
+                 paymentStatus: 'Pendiente',
+                 assignedTo: null,
+                 historial: [{ timestamp: creationTime, status: 'Recibido', user: 'Sistema' }], // Initial history
+                 internalNotes: []          // Initialize notes
+             });
+             setStore('radicados', radicados);
+
+             setTimeout(() => {
+                 hideLoader('add-radicado-loader');
+                 renderRadicados();
+                 renderPagos();
+                 addRadicadoForm.reset();
+                 addRadicadoModal.hide();
+                 showMessage(`Nuevo radicado ${newId} creado exitosamente.`);
+                 logActivity(`Nuevo radicado creado: ${newId} - ${title}`, 'create');
+                 renderCharts();
+                 updateDashboardCounts();
+             }, 500);
+         });
+
+        function deleteRadicado(id) {
+             if (confirm(`¿Está seguro de eliminar el radicado ${id}? Esta acción también eliminará documentos asociados y afectará reportes.`)) {
+                let radicados = getStore('radicados');
+                let documents = getStore('documents');
+
+                radicados = radicados.filter(r => r.id !== id);
+                documents = documents.filter(d => d.radicadoId !== id);
+
+                setStore('radicados', radicados);
+                setStore('documents', documents);
+
+                renderRadicados();
+                renderPagos();
+                renderDocuments();
+                showMessage(`Radicado ${id} y sus documentos asociados eliminados.`, 'warning');
+                logActivity(`Radicado eliminado: ${id}`, 'delete');
+                renderCharts();
+                updateDashboardCounts();
+             }
+        }
+
+         // --- Feature: Control de Pagos ---
+        const pagosList = document.getElementById('pagos-list');
+        const editPaymentForm = document.getElementById('editPaymentForm');
+        const paymentDetailModalEl = document.getElementById('paymentDetailModal');
+        const paymentDetailModal = new bootstrap.Modal(paymentDetailModalEl);
+
+        function renderPagos() {
+            const radicados = getStore('radicados') || [];
+            pagosList.innerHTML = '';
+
+            if (radicados.length === 0) {
+                pagosList.innerHTML = '<tr><td colspan="5">No hay radicados para mostrar estados de pago.</td></tr>';
+            } else {
+                 // Sort by creation date, newest first
+                 radicados.sort((a, b) => new Date(b.created) - new Date(a.created));
+
+                radicados.forEach(rad => {
+                    const row = `
+                        <tr>
+                            <td>${rad.id}</td>
+                            <td>${rad.title}</td>
+                             <td>${rad.solicitante || '-'}</td>
+                            <td><span class="badge bg-${getPaymentStatusColor(rad.paymentStatus)}">${rad.paymentStatus}</span></td>
+                            <td>
+                                <button class="btn btn-sm btn-warning" title="Actualizar Estado Pago" onclick="viewPago('${rad.id}')"><i class="fas fa-money-check-alt"></i></button>
+                            </td>
+                        </tr>
+                    `;
+                    pagosList.innerHTML += row;
+                });
+            }
+            updateDashboardCounts();
+        }
+
+         function getPaymentStatusColor(status) {
+            switch (status) {
+                case 'Pendiente': return 'warning text-dark';
+                case 'Pagado': return 'success';
+                case 'Vencido': return 'danger';
+                case 'Exonerado': return 'info';
+                default: return 'secondary';
+            }
+        }
+
+         function viewPago(radicadoId) {
+            const radicados = getStore('radicados');
+            const rad = radicados.find(r => r.id === radicadoId);
+            if (rad) {
+                document.getElementById('edit-payment-radicado-id').value = rad.id;
+                document.getElementById('payment-radicado-info').textContent = `${rad.id} - ${rad.title}`;
+                document.getElementById('edit-payment-status').value = rad.paymentStatus;
+                document.getElementById('paymentDetailModalLabel').textContent = `Actualizar Pago Radicado ${rad.id}`;
+                paymentDetailModal.show();
+            }
+        }
+
+         editPaymentForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            showLoader('payment-loader');
+            const radicadoId = document.getElementById('edit-payment-radicado-id').value;
+            const newPaymentStatus = document.getElementById('edit-payment-status').value;
+            let radicados = getStore('radicados');
+            const index = radicados.findIndex(r => r.id === radicadoId);
+
+            if (index !== -1) {
+                radicados[index].paymentStatus = newPaymentStatus;
+                setStore('radicados', radicados);
+
+                setTimeout(() => {
+                    hideLoader('payment-loader');
+                    renderPagos();
+                    paymentDetailModal.hide();
+                    showMessage(`Estado de pago del radicado ${radicadoId} actualizado a ${newPaymentStatus}.`);
+                    logActivity(`Pago radicado ${radicadoId} actualizado a: ${newPaymentStatus}`, 'update');
+                    renderCharts();
+                    updateDashboardCounts();
+                }, 500);
+            } else {
+                 hideLoader('payment-loader');
+                 showMessage('Error: No se encontró el radicado.', 'danger');
+            }
+        });
+
+
+        // --- Feature: Usuarios y Roles ---
+        const usersList = document.getElementById('users-list');
+        const userForm = document.getElementById('userForm');
+        const addUserModalEl = document.getElementById('addUserModal');
+        const addUserModal = new bootstrap.Modal(addUserModalEl);
+
+        function renderUsers() {
+            if (document.getElementById('usuarios-section').style.display === 'none') return;
+
+            const users = getStore('users') || [];
+            usersList.innerHTML = '';
+
+             if (users.length === 0) {
+                usersList.innerHTML = '<tr><td colspan="4">No hay usuarios registrados.</td></tr>';
+            } else {
+                users.forEach(user => {
+                    const row = `
+                        <tr>
+                            <td>${user.name}</td>
+                            <td>${user.email}</td>
+                            <td><span class="badge bg-info">${user.role}</span></td>
+                            <td>
+                                <button class="btn btn-sm btn-warning" title="Editar Usuario" onclick="editUser('${user.id}')"><i class="fas fa-user-edit"></i></button>
+                                <button class="btn btn-sm btn-danger" title="Eliminar Usuario" onclick="deleteUser('${user.id}')"><i class="fas fa-user-times"></i></button>
+                            </td>
+                        </tr>
+                    `;
+                    usersList.innerHTML += row;
+                });
+            }
+             updateDashboardCounts();
+        }
+
+         userForm.addEventListener('submit', (e) => {
+             e.preventDefault();
+             showLoader('user-loader');
+             const userId = document.getElementById('edit-user-id').value;
+             const name = document.getElementById('user-name').value;
+             const email = document.getElementById('user-email').value;
+             const role = document.getElementById('user-role').value;
+             let users = getStore('users') || [];
+             let action = '';
+
+             if (userId) { // Editing
+                 const index = users.findIndex(u => u.id === userId);
+                 if (index !== -1) {
+                     users[index] = { ...users[index], name, email, role };
+                     action = 'actualizado';
+                     logActivity(`Usuario editado: ${email} (ID: ${userId})`, 'update');
+                 }
+             } else { // Adding
+                 const newIdNumber = (users.length > 0 ? Math.max(...users.map(u => parseInt(u.id.replace('USR', '')))) : 0) + 1;
+                 const newId = `USR${String(newIdNumber).padStart(3, '0')}`;
+                 users.push({ id: newId, name, email, role });
+                 action = 'añadido';
+                 logActivity(`Nuevo usuario añadido: ${email} (Rol: ${role})`, 'create');
+             }
+
+             setStore('users', users);
+
+             setTimeout(() => {
+                 hideLoader('user-loader');
+                 renderUsers();
+                 userForm.reset();
+                 document.getElementById('edit-user-id').value = '';
+                 addUserModal.hide();
+                 showMessage(`Usuario ${action} exitosamente.`);
+                 renderRadicados();
+                 updateDashboardCounts();
+             }, 500);
+         });
+
+         function editUser(id) {
+             const users = getStore('users');
+             const user = users.find(u => u.id === id);
+             if (user) {
+                 document.getElementById('edit-user-id').value = user.id;
+                 document.getElementById('user-name').value = user.name;
+                 document.getElementById('user-email').value = user.email;
+                 document.getElementById('user-role').value = user.role;
+                 document.getElementById('addUserModalLabel').textContent = 'Editar Usuario';
+                 addUserModal.show();
+             }
+         }
+
+        addUserModalEl.addEventListener('hidden.bs.modal', function () {
+            document.getElementById('addUserModalLabel').textContent = 'Añadir Usuario';
+            userForm.reset();
+            document.getElementById('edit-user-id').value = '';
+        });
+
+
+         function deleteUser(id) {
+             const radicados = getStore('radicados') || [];
+             const isAssigned = radicados.some(r => r.assignedTo === id);
+
+             if (isAssigned) {
+                 showMessage(`No se puede eliminar el usuario porque está asignado a uno o más radicados. Reasigne los radicados primero.`, 'danger');
+                 return;
+             }
+
+             if (confirm(`¿Está seguro de eliminar este usuario? Esta acción no se puede deshacer.`)) {
+                let users = getStore('users');
+                const userEmail = users.find(u => u.id === id)?.email || id;
+                users = users.filter(u => u.id !== id);
+                setStore('users', users);
+                renderUsers();
+                showMessage(`Usuario ${userEmail} eliminado.`, 'warning');
+                logActivity(`Usuario eliminado: ${userEmail}`, 'delete');
+                updateDashboardCounts();
+             }
+         }
+
+        // --- Feature: Informes Entes de Control ---
+        const reportFeedbackDiv = document.getElementById('report-feedback');
+
+        function simulateReportGeneration(reportType) {
+            showLoader('informe-loader');
+            reportFeedbackDiv.classList.add('d-none');
+
+            setTimeout(() => {
+                hideLoader('informe-loader');
+                reportFeedbackDiv.textContent = `Generando ${reportType}... (Simulación exitosa).`;
+                reportFeedbackDiv.className = 'mt-3 alert alert-success';
+                reportFeedbackDiv.classList.remove('d-none');
+                logActivity(`Simulación de generación de informe: ${reportType}`, 'report');
+                 setTimeout(() => reportFeedbackDiv.classList.add('d-none'), 5000);
+            }, 1000);
+        }
+
+        // --- Feature: Gestión Sitio Web ---
+        const websiteForm = document.getElementById('websiteCustomizationForm');
+        const templateSelect = document.getElementById('template-select');
+        const colorPicker = document.getElementById('color-picker');
+        const logoUpload = document.getElementById('logo-upload');
+        const docUpload = document.getElementById('doc-upload');
+        const logoFeedback = document.getElementById('logo-upload-feedback');
+        const docFeedback = document.getElementById('doc-upload-feedback');
+
+
+        function loadWebsiteConfig() {
+             if (!document.getElementById('website-section')) return;
+
+            const config = getStore('websiteConfig');
+            if (config) {
+                templateSelect.value = config.template;
+                colorPicker.value = config.color;
+                logoFeedback.textContent = config.logo ? `Logo actual (simulado): ${config.logo}` : 'No hay logo subido.';
+                 docFeedback.textContent = config.publicDocs.length > 0 ? `Documentos públicos subidos (simulado): ${config.publicDocs.join(', ')}` : 'No hay documentos públicos.';
+            }
+        }
+
+        if (websiteForm) {
+            websiteForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                showLoader('website-loader');
+                const config = getStore('websiteConfig') || { publicDocs: [] };
+
+                config.template = templateSelect.value;
+                config.color = colorPicker.value;
+
+                if (logoUpload.files.length > 0) {
+                    config.logo = logoUpload.files[0].name;
+                    logoFeedback.textContent = `Logo '${config.logo}' listo para guardar.`;
+                }
+                if (docUpload.files.length > 0) {
+                    const newDocName = docUpload.files[0].name;
+                    if (!config.publicDocs.includes(newDocName)) {
+                         config.publicDocs.push(newDocName);
+                    }
+                     docFeedback.textContent = `Documento '${newDocName}' listo para añadir. Docs actuales: ${config.publicDocs.join(', ')}`;
+                }
+
+                setStore('websiteConfig', config);
+
+                setTimeout(() => {
+                    hideLoader('website-loader');
+                    showMessage('Configuración del sitio web guardada.');
+                    logActivity(`Configuración del sitio web actualizada`, 'update');
+                    logoUpload.value = '';
+                    docUpload.value = '';
+                    loadWebsiteConfig();
+                }, 700);
+            });
+        }
+
+        // --- Feature: Gestión Documental ---
+        const internalDocForm = document.getElementById('internalDocForm');
+        const internalDocUpload = document.getElementById('internal-doc-upload');
+        const documentListUl = document.getElementById('document-list');
+
+        function renderDocuments() {
+            const documents = getStore('documents') || [];
+            documentListUl.innerHTML = '';
+
+             if (documents.length === 0) {
+                documentListUl.innerHTML = '<li class="list-group-item">No hay documentos internos subidos.</li>';
+            } else {
+                documents.sort((a, b) => new Date(b.uploadDate) - new Date(a.uploadDate));
+
+                documents.forEach(doc => {
+                    const li = document.createElement('li');
+                    li.className = 'list-group-item d-flex justify-content-between align-items-center';
+                    const uploadDateStr = new Date(doc.uploadDate).toLocaleDateString('es-CO');
+                    li.innerHTML = `
+                        <span>
+                            <i class="fas fa-file me-2"></i> ${doc.name}
+                            ${doc.radicadoId ? `<span class="badge bg-light text-dark ms-2">Rad: ${doc.radicadoId}</span>` : ''}
+                             <small class="text-muted ms-2">- ${uploadDateStr}</small>
+                        </span>
+                        <button class="btn btn-sm btn-danger role-curador" title="Eliminar Documento" onclick="deleteDocument('${doc.id}')"><i class="fas fa-trash"></i></button>
+                    `;
+                    documentListUl.appendChild(li);
+                });
+            }
+             document.querySelectorAll('#document-list .role-curador').forEach(btn => {
+                 btn.style.display = (roleSelector.value === 'curador') ? '' : 'none';
+            });
+        }
+
+        if (internalDocForm) {
+            internalDocForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                if (internalDocUpload.files.length === 0) {
+                    showMessage('Por favor, seleccione un archivo para subir.', 'warning');
+                    return;
+                }
+                showLoader('doc-loader');
+
+                const file = internalDocUpload.files[0];
+                const radicadoId = document.getElementById('internal-doc-radicado').value;
+                let documents = getStore('documents') || [];
+                const newDocIdNumber = (documents.length > 0 ? Math.max(...documents.map(d => parseInt(d.id.replace('DOC', '')))) : 0) + 1;
+                const newDocId = `DOC${String(newDocIdNumber).padStart(3, '0')}`;
+
+                documents.push({
+                    id: newDocId, name: file.name, radicadoId: radicadoId || null,
+                    uploadDate: new Date().toISOString()
+                });
+                setStore('documents', documents);
+
+                 setTimeout(() => {
+                    hideLoader('doc-loader');
+                    renderDocuments();
+                    internalDocForm.reset();
+                    showMessage(`Documento '${file.name}' subido (simulado).`);
+                    logActivity(`Documento interno subido: ${file.name} ${radicadoId ? '(Rad: '+radicadoId+')' : ''}`, 'upload');
+                }, 600);
+            });
+        }
+
+         function deleteDocument(id) {
+             if (confirm(`¿Está seguro de eliminar este documento?`)) {
+                let documents = getStore('documents');
+                const docName = documents.find(d => d.id === id)?.name || id;
+                documents = documents.filter(doc => doc.id !== id);
+                setStore('documents', documents);
+                renderDocuments();
+                showMessage(`Documento ${docName} eliminado.`, 'warning');
+                logActivity(`Documento eliminado: ${docName}`, 'delete');
+             }
+         }
+
+        // --- Feature: Análisis y Reportes (Charts) ---
+        let radicadosStatusChart = null;
+        let pqrsMonthlyChart = null;
+        let radicadosAssignedChart = null;
+        let paymentStatusChart = null;
+
+        function renderCharts() {
+             if (document.getElementById('analisis-section').classList.contains('d-none')) {
+                 return;
+             }
+
+            const radicados = getStore('radicados') || [];
+            const pqrs = getStore('pqrs') || [];
+            const users = getStore('users') || [];
+
+            // --- Radicados Status Chart ---
+            try {
+                const statusCounts = radicados.reduce((acc, rad) => { acc[rad.status] = (acc[rad.status] || 0) + 1; return acc; }, {});
+                const statusLabels = Object.keys(statusCounts);
+                const statusData = Object.values(statusCounts);
+                const statusColors = statusLabels.map(label => getChartColorByStatus(label)); // Use specific color function
+
+                const ctxRadicados = document.getElementById('radicadosStatusChart')?.getContext('2d');
+                if(ctxRadicados) {
+                    if (radicadosStatusChart) radicadosStatusChart.destroy();
+                    radicadosStatusChart = new Chart(ctxRadicados, {
+                        type: 'doughnut',
+                        data: { labels: statusLabels, datasets: [{ data: statusData, backgroundColor: statusColors, borderColor: '#fff', borderWidth: 1 }] },
+                        options: { responsive: true, plugins: { legend: { position: 'top' } } }
+                    });
+                }
+            } catch (e) { console.error("Error rendering Radicados Status Chart:", e); }
+
+             // --- PQRS Monthly Chart ---
+             try {
+                const pqrsMonthlyCounts = pqrs.reduce((acc, p) => { const month = new Date(p.date).toLocaleString('es-CO', { month: 'short', year: 'numeric' }); acc[month] = (acc[month] || 0) + 1; return acc; }, {});
+                const sortedMonths = Object.keys(pqrsMonthlyCounts).sort((a, b) => new Date(a.split('. ')[1], getMonthIndex(a.split('. ')[0])) - new Date(b.split('. ')[1], getMonthIndex(b.split('. ')[0])));
+                const pqrsLabels = sortedMonths;
+                const pqrsData = sortedMonths.map(month => pqrsMonthlyCounts[month]);
+
+                const ctxPqrs = document.getElementById('pqrsMonthlyChart')?.getContext('2d');
+                if(ctxPqrs) {
+                    if (pqrsMonthlyChart) pqrsMonthlyChart.destroy();
+                    pqrsMonthlyChart = new Chart(ctxPqrs, {
+                        type: 'bar',
+                        data: { labels: pqrsLabels, datasets: [{ label: 'PQRS Recibidas', data: pqrsData, backgroundColor: 'rgba(54, 162, 235, 0.6)', borderColor: 'rgba(54, 162, 235, 1)', borderWidth: 1 }] },
+                        options: { responsive: true, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }, plugins: { legend: { display: false } } }
+                    });
+                }
+             } catch (e) { console.error("Error rendering PQRS Monthly Chart:", e); }
+
+             // --- Radicados by Assigned User Chart ---
+             try {
+                const assignedCounts = radicados.reduce((acc, rad) => { const userId = rad.assignedTo; const userName = userId ? (users.find(u => u.id === userId)?.name || 'Desconocido') : 'Sin asignar'; acc[userName] = (acc[userName] || 0) + 1; return acc; }, {});
+                const assignedLabels = Object.keys(assignedCounts);
+                const assignedData = Object.values(assignedCounts);
+
+                const ctxAssigned = document.getElementById('radicadosAssignedChart')?.getContext('2d');
+                 if(ctxAssigned) {
+                    if (radicadosAssignedChart) radicadosAssignedChart.destroy();
+                    radicadosAssignedChart = new Chart(ctxAssigned, {
+                        type: 'pie',
+                        data: { labels: assignedLabels, datasets: [{ data: assignedData, backgroundColor: generateColorPalette(assignedLabels.length), borderColor: '#fff', borderWidth: 1 }] },
+                        options: { responsive: true, plugins: { legend: { position: 'top' } } }
+                    });
+                 }
+             } catch (e) { console.error("Error rendering Radicados Assigned Chart:", e); }
+
+            // --- Payment Status Chart ---
+            try {
+                const paymentCounts = radicados.reduce((acc, rad) => { acc[rad.paymentStatus] = (acc[rad.paymentStatus] || 0) + 1; return acc; }, {});
+                const paymentLabels = Object.keys(paymentCounts);
+                const paymentData = Object.values(paymentCounts);
+                const paymentColors = paymentLabels.map(label => getChartColorByPaymentStatus(label)); // Use specific color function
+
+                const ctxPayment = document.getElementById('paymentStatusChart')?.getContext('2d');
+                if(ctxPayment) {
+                    if (paymentStatusChart) paymentStatusChart.destroy();
+                    paymentStatusChart = new Chart(ctxPayment, {
+                        type: 'doughnut',
+                        data: { labels: paymentLabels, datasets: [{ data: paymentData, backgroundColor: paymentColors, borderColor: '#fff', borderWidth: 1 }] },
+                        options: { responsive: true, plugins: { legend: { position: 'top' } } }
+                    });
+                }
+            } catch (e) { console.error("Error rendering Payment Status Chart:", e); }
+        }
+
+        function getMonthIndex(monthShort) {
+            const months = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+            return months.indexOf(monthShort.toLowerCase().replace('.', ''));
+        }
+
+        function generateColorPalette(count) {
+            const colors = [];
+            const baseHue = 200;
+            for (let i = 0; i < count; i++) {
+                const hue = (baseHue + (i * (360 / count))) % 360;
+                colors.push(`hsl(${hue}, 70%, 60%)`);
+            }
+            return colors;
+        }
+
+         // Specific color functions for consistency with badges
+        function getChartColorByStatus(status) {
+            switch (status) {
+                case 'Recibido': return '#6c757d'; // secondary
+                case 'En Revisión': return '#0dcaf0'; // info
+                case 'Requiere Ajustes': return '#ffc107'; // warning
+                case 'Aprobado': return '#198754'; // success
+                case 'Rechazado': return '#dc3545'; // danger
+                case 'Archivado': return '#212529'; // dark
+                default: return '#adb5bd';
+            }
+        }
+        function getChartColorByPaymentStatus(status) {
+             switch (status) {
+                case 'Pendiente': return '#ffc107'; // warning
+                case 'Pagado': return '#198754'; // success
+                case 'Vencido': return '#dc3545'; // danger
+                case 'Exonerado': return '#0dcaf0'; // info
+                default: return '#6c757d';
+            }
+        }
+
+
+        // --- Feature: Mapas POT ---
+        function initializeTooltips() {
+            const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+            tooltipTriggerList.map(function (tooltipTriggerEl) {
+              const existingTooltip = bootstrap.Tooltip.getInstance(tooltipTriggerEl);
+              if (existingTooltip) existingTooltip.dispose();
+              return new bootstrap.Tooltip(tooltipTriggerEl);
+            });
+        }
+
+
+        // --- Feature: Gestión PQRS ---
+        const pqrsForm = document.getElementById('pqrsForm');
+        const pqrsList = document.getElementById('pqrs-list');
+        const respondPqrsForm = document.getElementById('respondPqrsForm');
+        const pqrsDetailModalEl = document.getElementById('pqrsDetailModal');
+        const pqrsDetailModal = new bootstrap.Modal(pqrsDetailModalEl);
+
+        function renderPqrs() {
+            const pqrsData = getStore('pqrs') || [];
+            pqrsList.innerHTML = '';
+
+             if (pqrsData.length === 0) {
+                pqrsList.innerHTML = '<tr><td colspan="6">No hay PQRS registradas.</td></tr>';
+            } else {
+                 pqrsData.sort((a, b) => new Date(b.date) - new Date(a.date));
+                pqrsData.forEach(p => {
+                    const row = `
+                        <tr>
+                            <td>${p.id}</td>
+                            <td>${p.type}</td>
+                            <td>${p.subject}</td>
+                            <td>${new Date(p.date).toLocaleDateString('es-CO')}</td>
+                            <td><span class="badge bg-${getPqrsStatusColor(p.status)}">${p.status}</span></td>
+                            <td>
+                                <button class="btn btn-sm btn-info" title="Ver/Responder PQRS" onclick="viewPqrs('${p.id}')"><i class="fas fa-eye"></i></button>
+                                <button class="btn btn-sm btn-danger role-curador" title="Eliminar PQRS" onclick="deletePqrs('${p.id}')"><i class="fas fa-trash"></i></button>
+                            </td>
+                        </tr>
+                    `;
+                    pqrsList.innerHTML += row;
+                });
+            }
+             document.querySelectorAll('#pqrs-list .role-curador').forEach(btn => {
+                 btn.style.display = (roleSelector.value === 'curador') ? '' : 'none';
+            });
+             updateDashboardCounts();
+        }
+
+         function getPqrsStatusColor(status) {
+            switch (status) {
+                case 'Recibido': return 'secondary';
+                case 'En Proceso': return 'warning text-dark';
+                case 'Respondido': return 'primary';
+                case 'Cerrado': return 'success';
+                default: return 'light';
+            }
+        }
+
+        if(pqrsForm) {
+            pqrsForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                showLoader('pqrs-loader');
+                const type = document.getElementById('pqrs-type').value;
+                const subject = document.getElementById('pqrs-subject').value;
+                const details = document.getElementById('pqrs-details').value;
+                const contact = document.getElementById('pqrs-contact').value;
+                let pqrsData = getStore('pqrs') || [];
+                const newIdNumber = (pqrsData.length > 0 ? Math.max(...pqrsData.map(p => parseInt(p.id.replace('PQR', '')))) : 0) + 1;
+                const newId = `PQR${String(newIdNumber).padStart(3, '0')}`;
+
+                pqrsData.push({ id: newId, type, subject, details, contact, date: new Date().toISOString(), status: 'Recibido', response: '' });
+                setStore('pqrs', pqrsData);
+
+                 setTimeout(() => {
+                    hideLoader('pqrs-loader');
+                    renderPqrs();
+                    pqrsForm.reset();
+                    showMessage(`PQRS ${newId} registrada exitosamente.`);
+                    logActivity(`Nueva PQRS registrada: ${newId} - ${type}`, 'create');
+                    renderCharts();
+                    updateDashboardCounts();
+                }, 500);
+            });
+        }
+
+        function viewPqrs(id) {
+            const pqrsData = getStore('pqrs');
+            const p = pqrsData.find(item => item.id === id);
+            if (p) {
+                document.getElementById('detail-pqrs-id').textContent = p.id;
+                document.getElementById('detail-pqrs-type').textContent = p.type;
+                document.getElementById('detail-pqrs-subject').textContent = p.subject;
+                document.getElementById('detail-pqrs-contact').textContent = p.contact;
+                document.getElementById('detail-pqrs-date').textContent = new Date(p.date).toLocaleString('es-CO');
+                document.getElementById('detail-pqrs-details').textContent = p.details;
+                document.getElementById('respond-pqrs-id').value = p.id;
+                document.getElementById('pqrs-response').value = p.response || '';
+                document.getElementById('pqrs-status-update').value = p.status;
+                pqrsDetailModal.show();
+            }
+        }
+
+        if(respondPqrsForm) {
+            respondPqrsForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                showLoader('pqrs-respond-loader');
+                const id = document.getElementById('respond-pqrs-id').value;
+                const responseText = document.getElementById('pqrs-response').value;
+                const newStatus = document.getElementById('pqrs-status-update').value;
+                let pqrsData = getStore('pqrs');
+                const index = pqrsData.findIndex(p => p.id === id);
+
+                if (index !== -1) {
+                    pqrsData[index].response = responseText;
+                    pqrsData[index].status = newStatus;
+                    setStore('pqrs', pqrsData);
+
+                    setTimeout(() => {
+                        hideLoader('pqrs-respond-loader');
+                        renderPqrs();
+                        pqrsDetailModal.hide();
+                        showMessage(`Respuesta enviada y estado actualizado para PQRS ${id}.`);
+                        logActivity(`PQRS ${id} respondida y actualizada a estado: ${newStatus}`, 'update');
+                        renderCharts();
+                        updateDashboardCounts();
+                    }, 800);
+                } else {
+                     hideLoader('pqrs-respond-loader');
+                     showMessage('Error: No se encontró la PQRS.', 'danger');
+                }
+            });
+        }
+
+         function deletePqrs(id) {
+             if (confirm(`¿Está seguro de eliminar la PQRS ${id}?`)) {
+                let pqrsData = getStore('pqrs');
+                pqrsData = pqrsData.filter(p => p.id !== id);
+                setStore('pqrs', pqrsData);
+                renderPqrs();
+                showMessage(`PQRS ${id} eliminada.`, 'warning');
+                logActivity(`PQRS eliminada: ${id}`, 'delete');
+                renderCharts();
+                updateDashboardCounts();
+             }
+         }
+
+         // --- Feature: Soporte Técnico ---
+        const soporteForm = document.getElementById('soporteForm');
+        const supportTicketsList = document.getElementById('support-tickets-list');
+        const ticketDetailModalEl = document.getElementById('ticketDetailModal');
+        const ticketDetailModal = new bootstrap.Modal(ticketDetailModalEl);
+
+        function renderSupportTickets() {
+            const tickets = getStore('supportTickets') || [];
+            supportTicketsList.innerHTML = '';
+
+             if (tickets.length === 0) {
+                supportTicketsList.innerHTML = '<tr><td colspan="6">No hay tickets de soporte registrados.</td></tr>';
+            } else {
+                 tickets.sort((a, b) => new Date(b.date) - new Date(a.date));
+                tickets.forEach(t => {
+                    const row = `
+                        <tr>
+                            <td>${t.id}</td>
+                            <td>${t.category}</td>
+                            <td>${t.subject}</td>
+                            <td>${new Date(t.date).toLocaleDateString('es-CO')}</td>
+                            <td><span class="badge bg-${getTicketStatusColor(t.status)}">${t.status}</span></td>
+                            <td>
+                                <button class="btn btn-sm btn-info" title="Ver Detalles Ticket" onclick="viewTicket('${t.id}')"><i class="fas fa-eye"></i></button>
+                            </td>
+                        </tr>
+                    `;
+                    supportTicketsList.innerHTML += row;
+                });
+            }
+        }
+
+         function getTicketStatusColor(status) {
+            switch (status) {
+                case 'Abierto': return 'primary';
+                case 'En Progreso': return 'warning text-dark';
+                case 'Esperando Respuesta': return 'info';
+                case 'Cerrado': return 'success';
+                default: return 'secondary';
+            }
+        }
+
+        if(soporteForm) {
+            soporteForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                showLoader('soporte-loader');
+                const category = document.getElementById('soporte-category').value;
+                const subject = document.getElementById('soporte-subject').value;
+                const description = document.getElementById('soporte-description').value;
+                const priority = document.getElementById('soporte-priority').value;
+
+                let tickets = getStore('supportTickets') || [];
+                 const newIdNumber = (tickets.length > 0 ? Math.max(...tickets.map(t => parseInt(t.id.replace('SUP', '')))) : 0) + 1;
+                 const newId = `SUP${String(newIdNumber).padStart(3, '0')}`;
+
+                tickets.push({ id: newId, category, subject, description, priority, date: new Date().toISOString(), status: 'Abierto', response: null });
+                setStore('supportTickets', tickets);
+
+                setTimeout(() => {
+                    hideLoader('soporte-loader');
+                    renderSupportTickets();
+                    soporteForm.reset();
+                    document.getElementById('soporte-priority').value = 'Media';
+                    showMessage(`Ticket de soporte ${newId} enviado exitosamente.`);
+                    logActivity(`Nuevo ticket de soporte enviado: ${newId} - ${subject}`, 'create');
+                }, 600);
+            });
+        }
+
+         function viewTicket(id) {
+            const tickets = getStore('supportTickets');
+            const ticket = tickets.find(t => t.id === id);
+            if (ticket) {
+                document.getElementById('detail-ticket-id').textContent = ticket.id;
+                document.getElementById('detail-ticket-category').textContent = ticket.category;
+                document.getElementById('detail-ticket-subject').textContent = ticket.subject;
+                document.getElementById('detail-ticket-priority').textContent = ticket.priority;
+                document.getElementById('detail-ticket-date').textContent = new Date(ticket.date).toLocaleString('es-CO');
+                 document.getElementById('detail-ticket-status').innerHTML = `<span class="badge bg-${getTicketStatusColor(ticket.status)}">${ticket.status}</span>`;
+                document.getElementById('detail-ticket-description').textContent = ticket.description;
+                document.getElementById('detail-ticket-response').textContent = ticket.response || 'Aún no hay respuesta del equipo de soporte.';
+                ticketDetailModal.show();
+            }
+        }
+
+
+        // --- Dashboard Counts ---
+        function updateDashboardCounts() {
+            const radicados = getStore('radicados') || [];
+            const pqrs = getStore('pqrs') || [];
+            const users = getStore('users') || [];
+
+            const activeRadicados = radicados.filter(r => !['Archivado', 'Rechazado'].includes(r.status)).length;
+            const pendingPqrs = pqrs.filter(p => ['Recibido', 'En Proceso'].includes(p.status)).length;
+            const activeUsers = users.length;
+            const pendingPayments = radicados.filter(r => r.paymentStatus === 'Pendiente').length;
+
+            document.getElementById('active-radicados-count').textContent = activeRadicados;
+            document.getElementById('pending-pqrs-count').textContent = pendingPqrs;
+            document.getElementById('active-users-count').textContent = activeUsers;
+            document.getElementById('pending-payments-count').textContent = pendingPayments;
+        }
+
+        // --- Initial Load ---
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log("DOM fully loaded - v3");
+            initializeData();
+            console.log("Data initialized - v3");
+            showSection('dashboard');
+            console.log("Dashboard shown - v3");
+
+            // Initial renders
+            renderRadicados();
+            renderPagos();
+            renderUsers();
+            renderDocuments();
+            renderPqrs();
+            renderSupportTickets();
+            loadWebsiteConfig();
+            renderActivityLog();
+            updateDashboardCounts();
+            initializeTooltips();
+             console.log("Initial renders complete - v3");
+
+            applyRolePermissions(roleSelector.value);
+             console.log("Initial role permissions applied - v3");
+
+             setTimeout(renderCharts, 100);
+             console.log("Chart rendering scheduled - v3");
+
+        });
+
+    </script>
+
+</body>
+</html>
